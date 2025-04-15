@@ -1,0 +1,3 @@
+here is a test file
+with a single character
+word at the end a

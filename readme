@@ -98,7 +98,36 @@ particular, what bugs are in your submission?
 ------------------------------------------------------------------------
 What is your mywc program test plan?
 
-
+Boundary tests:
+mywc1.txt: This is an empty file, testing the program's ability to 
+only start counting words, characters, and lines once they start 
+appearing
+mywc2.txt: This is a file with just the character a, testing the 
+program's functionality on very short inputs
+mywc3.txt: This is a file with just the word "hello", testing the 
+program's functionality on short inputs
+mywc4.txt: This is a file with just the word "hello" and a newline,
+testing the program's functionality on short inputs with newlines
+mywc5.txt: This is a file with just the word "hello" and a space,
+testing the program's functionality on short inputs with spaces but no
+new lines
+mywc6.txt: This contains only newlines, testing the program's ability
+to count lines, even when there are no words present
+mywc7.txt: This contains only spaces, testing the program's ability
+to count spaces, even when there are no words present
+mywc8.txt: This contains only tabs, testing the program's ability
+to count other types of whitespace, even when there are no words
+present
+mywc9.txt: This contains a mix of whitespace types seperating the
+words, testing the program's ability to recognize different types of
+whitespace
+mywc10.txt: This contains a mix of whitespace types and newlines,
+testing the program's ability to recognize different types of
+whitespace, including newlines
+mywc11.txt: This contains one long word, testing the program's ability
+to count characters correctly with no whitespace
+mywc12.txt: This contains a single character word at the end, testing
+the program's ending logic
 
 ------------------------------------------------------------------------
 What are the CPU times consumed by the programs from Parts 2a, 2b, 2d,
@@ -113,7 +142,3 @@ Part 2d:  _____ seconds
 Part 2e:  _____ seconds
 
 Part 2f:  _____ seconds
-
-
-
-

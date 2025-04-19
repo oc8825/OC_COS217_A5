@@ -64,9 +64,9 @@ loop1:
 
     // lCharCount++
     adr x0, lCharCount
-    ldr w1, [x0]
-    add w1, w1, 1
-    str w1, [x0]
+    ldr x1, [x0]
+    add x1, x1, 1
+    str x1, [x0]
 
     // if(!isspace(iChar)) goto else1
     adr x0, iChar
@@ -83,9 +83,9 @@ loop1:
 
     // lWordCount++
     adr x0, lWordCount
-    ldr w1, [x0]
-    add w1, w1, 1
-    str w1, [x0]
+    ldr x1, [x0]
+    add x1, x1, 1
+    str x1, [x0]
 
     // iInWord = FALSE
     adr x0, iInWord
@@ -119,9 +119,9 @@ endif1:
 
     // lLineCount++
     adr x0, lLineCount
-    ldr w1, [x0]
-    add w1, w1, 1
-    str w1, [x0]
+    ldr x1, [x0]
+    add x1, x1, 1
+    str x1, [x0]
 
 endif2:
     //goto loop1
@@ -136,19 +136,19 @@ endloop1:
 
     //lWordCount++
     adr x0, lWordCount
-    ldr w1, [x0]
-    add w1, w1, 1
-    str w1, [x0]
+    ldr x1, [x0]
+    add x1, x1, 1
+    str x1, [x0]
 
 endif3:
     // printf("%7ld %7ld %7ld\n", lLineCount, lWordCount, lCharCount)
-    adr x0, printfFormatString
+    adr x0, printfFormatStr
     adr x1, lLineCount
-    ldr w1, [x1]
+    ldr x1, [x1]
     adr x2, lWordCount
-    ldr w2, [x2]
+    ldr x2, [x2]
     adr x3, lCharCount
-    ldr w3, [x3]
+    ldr x3, [x3]
     bl printf
 
     // Epilog and return 0

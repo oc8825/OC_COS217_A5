@@ -96,7 +96,65 @@ loop1:
     b endif1
 
 else1:
+    // if(iInWord) goto endif1
+    adr x0, iInWord
+    ldr w0, [x0]
+    cmp w0, TRUE
+    beq endif1
+
+    // iInWord = TRUE
+    adr x0, iInWord
+    mov w1, TRUE
+    str w1, [x0]
+
+    // goto endif1
+    b endif1
 
 endif1:
+    // if (iChar != '\n') goto endif2;
+    adr x0, iChar
+    ldr w0, [x0]
+    cmp w0, '\n'
+    bne endif2
+
+    // lLineCount++
+    adr x0, lLineCount
+    ldr w1, [x0]
+    add w1, w1, 1
+    str w1, [x0]
+
+endif2:
+    //goto loop1
+    b loop1
 
 endloop1:
+    // if(!iInWord) goto endif3
+    adr x0, iInWord
+    ldr w0, [x0]
+    cmp w0, FALSE
+    beq endif3
+
+    //lWordCount++
+    adr x0, lWordCount
+    ldr w1, [x0]
+    add w1, w1, 1
+    str w1, [x0]
+
+endif3:
+    // printf("%7ld %7ld %7ld\n", lLineCount, lWordCount, lCharCount)
+    adr x0, printfFormatString
+    adr x1, lLineCount
+    ldr w1, [x1]
+    adr x2, lWordCount
+    ldr w2, [x2]
+    adr x3, lCharCount
+    ldr w3, [x3]
+    bl printf
+
+    // Epilog and return 0
+    mov w0, 0
+    ldr x30, [sp]
+    add sp, sp, MAIN_STACK_BYTECOUNT
+    ret
+
+    .size main, (. - main)

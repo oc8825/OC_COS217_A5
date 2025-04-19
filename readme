@@ -3,7 +3,7 @@ Assignment 5 readme File
 ------------------------------------------------------------------------
 Student 1: What is your name?
 
-Owen Clarke
+
 
 ------------------------------------------------------------------------
 Student 2: What is your name?
@@ -128,6 +128,12 @@ mywc11.txt: This contains one long word, testing the program's ability
 to count characters correctly with no whitespace
 mywc12.txt: This contains a single character word at the end, testing
 the program's ending logic
+mywc19.txt: This contains spaces before the first word and after the 
+final word, testing the program's ability to maintain a proper word
+count when spacing is used irregularly
+mywc20.txt: This contains words with punctuation within them, testing
+the program's ability to keep track of words (series of non
+whitespace characters) when there are punctuation marks within them
 
 ------------------------------------------------------------------------
 What are the CPU times consumed by the programs from Parts 2a, 2b, 2d,

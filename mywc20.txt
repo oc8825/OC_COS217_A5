@@ -1,0 +1,4 @@
+here's a test-file with punct,uation with/in words
+Make sure that the pro%gram correct#ly tracks
+words as a sequence of non^whitespace characters,no
+matter the type of char*ac(ter

@@ -57,6 +57,7 @@ loop1:
         goto endif3;
     ulCarry = 1;
 endif3:
+    ulSum += oAddend2->aulDigits[lIndex];
     if (ulSum >= oAddend2->aulDigits[lIndex])
         goto endif4;
     ulCarry = 1;

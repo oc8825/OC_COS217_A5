@@ -7,6 +7,8 @@
 .equ OADDEND1, 48
 .equ ULCARRY, 24
 .equ LLENGTH, 0
+.equ LDIGITS, 8
+.equ SIZELONG, 8
 .equ MAX_DIGITS, 32768
 //--------------------------------------------------------------------
     .section .rodata
@@ -85,9 +87,9 @@ BigInt_add:
     cmp x0, x1
     ble endif2
     ldr x0, [sp, OSUM]
-    add x0, x0, 8
+    add x0, x0, LDIGITS
     mov x1, 0
-    mov x4, 8
+    mov x4, SIZELONG
     mov x6, MAX_DIGITS
     mul x5, x6, x4
     mov x2, x5
@@ -187,24 +189,3 @@ endif5:
     ldr     x30, [sp]
     add     sp, sp, ADD_STACK_BYTECOUNT  
     ret
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

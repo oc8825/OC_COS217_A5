@@ -2,6 +2,7 @@
 // bigintadd.s
 // Owen Clarke and Ben Zhou
 //--------------------------------------------------------------------
+
 .equ FALSE, 0
 .equ TRUE, 1
 .equ OADDEND1, 48
@@ -10,24 +11,29 @@
 .equ LDIGITS, 8
 .equ SIZELONG, 8
 .equ MAX_DIGITS, 32768
+
 //--------------------------------------------------------------------
+
     .section .rodata
+
 //--------------------------------------------------------------------
+
     .section .data
+
 //--------------------------------------------------------------------
+    
     .section .bss
+
 //--------------------------------------------------------------------
+    
     .section .text
+
 .equ LARGER_STACK_BYTECOUNT, 32
 
 .equ LLARGER, 8
 
 .equ LLENGTH1, 16
 .equ LLENGTH2, 24
-
-
-
-
 
 BigInt_larger: 
     // Prolog

@@ -172,10 +172,9 @@ endif6:
     str x3, [x2]
 
     // lSumLength++
-    adr x0, LSUMLENGTH
-    ldr x1, [x0]
-    add x1, x1, 1
-    str x1, [x0]
+    ldr x0, [sp, LSUMLENGTH]
+    add x0, x0, 1
+    str x0, [sp, LSUMLENGTH]
 
 endif5:
     // oSum->lLength = lSumLength

@@ -86,9 +86,9 @@ BigInt_add:
     ldr x0, [sp, OSUM]
     add x0, x0, 8
     mov x1, 0
-    mov w4, 8
+    mov x4, 8
     mov x6, MAX_DIGITS
-    mul x5, x6, w4
+    mul x5, x6, x4
     mov x2, x5
     bl memset 
 endif2: 

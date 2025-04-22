@@ -58,6 +58,7 @@ endif1:
 
 .size   BigInt_larger, .-BigInt_larger
 
+
 .global BigInt_add
 
 .equ ADD_STACK_BYTECOUNT, 64
@@ -80,25 +81,28 @@ BigInt_add:
     str x1, [sp, OADDEND2]
     str x2, [sp, OSUM]
     
+    // lSumLength = BigInt_larger(oAddend1->lLength, oAddend2->lLength)
     ldr x0, [sp, OADDEND1]
-    ldr x0, [x0, 0]
+    ldr x0, [x0, LLENGTH]
     ldr x1, [sp, OADDEND2]
-    ldr x1, [x1, 0]
+    ldr x1, [x1, LLENGTH]
     bl BigInt_larger
     str x0, [sp, LSUMLENGTH]
 
+    // if (oSum->lLength <= lSumLength) goto endif2
     ldr x0, [sp, OSUM]
-    ldr x0, [x0, 0]
+    ldr x0, [x0, LLENGTH]
     ldr x1, [sp, LSUMLENGTH]
     cmp x0, x1
     ble endif2
+
+    // memset(oSum->aulDigits, 0, MAX_DIGITS * sizeof(unsigned long))
     ldr x0, [sp, OSUM]
     add x0, x0, LDIGITS
     mov x1, 0
     mov x4, SIZELONG
     mov x6, MAX_DIGITS
-    mul x5, x6, x4
-    mov x2, x5
+    mul x2, x6, x4
     bl memset 
 endif2: 
     mov x0, 0

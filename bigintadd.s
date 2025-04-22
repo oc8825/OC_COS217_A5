@@ -87,7 +87,8 @@ BigInt_add:
     add x0, x0, 8
     mov x1, 0
     mov w4, 8
-    mul x5, MAX_DIGITS, w4
+    mov x6, MAX_DIGITS
+    mul x5, x6, w4
     mov x2, x5
     bl memset 
 endif2: 
@@ -151,7 +152,8 @@ endloop1:
     // if(lSumLength != MAX_DIGITS) goto endif6
     adr x0, lSumLength
     ldr x0, [x0]
-    cmp x0, MAX_DIGITS
+    mov x6, MAX_DIGITS
+    cmp x0, x6
     bne endif6
 
     // return FALSE

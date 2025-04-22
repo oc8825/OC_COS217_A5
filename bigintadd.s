@@ -145,13 +145,13 @@ endif4:
 
 endloop1:
     // if(ulCarry != 1) goto endif5
-    adr x0, ulCarry
+    adr x0, ULCARRY
     ldr x0, [x0]
     cmp x0, 1
     bne endif5
 
     // if(lSumLength != MAX_DIGITS) goto endif6
-    adr x0, lSumLength
+    adr x0, LSUMLENGTH
     ldr x0, [x0]
     mov x6, MAX_DIGITS
     cmp x0, x6

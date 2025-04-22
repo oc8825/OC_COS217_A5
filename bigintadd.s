@@ -108,7 +108,7 @@ loop1:
     mov x0, 0
     str x0, [sp, ULCARRY]
     ldr x1, [sp, OADDEND1]
-    add x1, x1, 8
+    add x1, x1, LDIGITS
     ldr x0, [sp, LINDEX]
     lsl x0, x0, 3
     ldr x2, [x1, x0]
@@ -121,7 +121,7 @@ loop1:
     str x2, [sp, ULCARRY]
 endif3:
     ldr x1, [sp, OADDEND2]
-    add x1, x1, 8
+    add x1, x1, LDIGITS
     ldr x0, [sp, LINDEX]
     lsl x0, x0, 3
     ldr x2, [x1, x0]
@@ -134,7 +134,7 @@ endif3:
     str x2, [sp, ULCARRY]
 endif4: 
     ldr x1, [sp, OSUM]
-    add x1, x1, 8
+    add x1, x1, LDIGITS
     ldr x0, [sp, LINDEX]
     lsl x0, x0, 3
     add x2, x1, x0
@@ -166,7 +166,7 @@ endloop1:
 endif6:
     // oSum->aulDigits[lSumLength] = 1
     ldr x0, [sp, OSUM]
-    add x0, x0, 8
+    add x0, x0, LDIGITS
     ldr x1, [sp, LSUMLENGTH]
     lsl x1, x1, 3
     add x2, x0, x1

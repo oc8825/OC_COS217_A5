@@ -80,17 +80,18 @@ BigInt_add:
 
     ldr x0, [sp, OSUM]
     ldr x0, [x0, 0]
-    ldr x1, [sp LSUMLENGTH]
+    ldr x1, [sp, LSUMLENGTH]
     cmp x0, x1
     ble endif2
     ldr x0, [sp, OSUM]
     add x0, x0, 8
     mov x1, 0
-    mov x2, (MAX_DIGITS * 8)
+    mul x5, MAX_DIGITS, 8
+    mov x2, x5
     bl memset 
 endif2: 
-    str 0, [sp, ULCARRY]
-    str 0, [sp, LINDEX]
+    mov [sp, LINDEX], 0
+    mov [sp, ULCARRY], 0
 loop1: 
     ldr x0, [sp, LINDEX]
     ldr x1, [sp, LSUMLENGTH]
@@ -105,7 +106,7 @@ loop1:
     ldr x0, [sp, LINDEX]
     lsl x0, x0, 3
     ldr x2, [x1, x0]
-    ldr x3, [sp ULSUM]
+    ldr x3, [sp, ULSUM]
     add x3, x3, x2
     str x3, [sp, ULSUM]
     cmp x3, x2
@@ -153,7 +154,7 @@ endloop1:
 
     // return FALSE
     mov w0, FALSE
-    ldr     x30, [sp, SAVED_LR]
+    ldr     x30, [sp]
     add     sp, sp, ADD_STACK_BYTECOUNT 
     ret
 
@@ -181,7 +182,7 @@ endif5:
 
     // return TRUE
     mov w0, TRUE
-    ldr     x30, [sp, SAVED_LR]
+    ldr     x30, [sp]
     add     sp, sp, ADD_STACK_BYTECOUNT
     
     ret

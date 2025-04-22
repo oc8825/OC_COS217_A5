@@ -42,15 +42,24 @@ BigInt_larger:
     str x0, [sp, LLENGTH1]
     str x1, [sp, LLENGTH2]
 
+    // if (lLength1 <= lLength2) goto else1
     ldr x0, [sp, LLENGTH1]
     ldr x1, [sp, LLENGTH2]
     cmp x0, x1
     ble else1
+
+    // lLarger = lLength1
     str x0, [sp, LLARGER]
+
+    // goto endif1
     b endif1
+
 else1: 
+    // lLarger = lLength2
     str x1, [sp, LLARGER]
-endif1: 
+
+endif1:
+    // epilog and return lLarger
     ldr x0, [sp, LLARGER]
     ldr x30, [sp]
     add sp, sp, LARGER_STACK_BYTECOUNT

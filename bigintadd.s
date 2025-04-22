@@ -104,19 +104,31 @@ BigInt_add:
     mov x6, MAX_DIGITS
     mul x2, x6, x4
     bl memset 
+
 endif2: 
+    // ulCarry = 0
     mov x0, 0
     str x0, [sp, LINDEX]
+
+    lIndex = 0;
     str x0, [sp, ULCARRY]
+
 loop1: 
+    // if (lIndex >= lSumLength) goto endloop1
     ldr x0, [sp, LINDEX]
     ldr x1, [sp, LSUMLENGTH]
     cmp x0, x1
     bge endloop1
+
+    // ulSum = ulCarry
     ldr x0, [sp, ULCARRY]
     str x0, [sp, ULSUM]
+
+    // ulCarry = 0
     mov x0, 0
     str x0, [sp, ULCARRY]
+
+    // ulSum += oAddend1->aulDigits[lIndex]
     ldr x1, [sp, OADDEND1]
     add x1, x1, LDIGITS
     ldr x0, [sp, LINDEX]
@@ -125,10 +137,15 @@ loop1:
     ldr x3, [sp, ULSUM]
     add x3, x3, x2
     str x3, [sp, ULSUM]
+
+    // if (ulSum >= oAddend1->aulDigits[lIndex]) goto endif3
     cmp x3, x2
     bge endif3
+
+    // ulCarry = 1
     mov x2, 1
     str x2, [sp, ULCARRY]
+
 endif3:
     ldr x1, [sp, OADDEND2]
     add x1, x1, LDIGITS

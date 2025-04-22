@@ -86,12 +86,14 @@ BigInt_add:
     ldr x0, [sp, OSUM]
     add x0, x0, 8
     mov x1, 0
-    mul x5, MAX_DIGITS, 8
+    move x4, 8
+    mul x5, MAX_DIGITS, x4
     mov x2, x5
     bl memset 
 endif2: 
-    mov [sp, LINDEX], 0
-    mov [sp, ULCARRY], 0
+    mov x0, 0
+    str x0, [sp, LINDEX]
+    str x0, [sp, ULCARRY]
 loop1: 
     ldr x0, [sp, LINDEX]
     ldr x1, [sp, LSUMLENGTH]

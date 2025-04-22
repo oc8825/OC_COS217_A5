@@ -68,7 +68,7 @@ endloop1:
 
     if (ulCarry != 1)
         goto endif5;
-    if (lSumLength = !MAX_DIGITS)
+    if (lSumLength != MAX_DIGITS)
         goto endif6;
     return FALSE;
 endif6:

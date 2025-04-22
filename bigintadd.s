@@ -174,7 +174,7 @@ endif6:
     str x3, [x2]
 
     // lSumLength++
-    adr x0, lSumLength
+    adr x0, LSUMLENGTH
     ldr x1, [x0]
     add x1, x1, 1
     str x1, [x0]

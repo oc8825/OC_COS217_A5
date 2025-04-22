@@ -147,6 +147,7 @@ loop1:
     str x2, [sp, ULCARRY]
 
 endif3:
+    // ulSum += oAddend2->aulDigits[lIndex]
     ldr x1, [sp, OADDEND2]
     add x1, x1, LDIGITS
     ldr x0, [sp, LINDEX]
@@ -155,11 +156,17 @@ endif3:
     ldr x3, [sp, ULSUM]
     add x3, x3, x2
     str x3, [sp, ULSUM]
+
+    // if (ulSum >= oAddend2->aulDigits[lIndex]) goto endif4
     cmp x3, x2
     bge endif4
+
+    // ulCarry = 1
     mov x2, 1
     str x2, [sp, ULCARRY]
-endif4: 
+
+endif4:
+    // oSum->aulDigits[lIndex] = ulSum
     ldr x1, [sp, OSUM]
     add x1, x1, LDIGITS
     ldr x0, [sp, LINDEX]
@@ -167,9 +174,13 @@ endif4:
     add x2, x1, x0
     ldr x3, [sp, ULSUM]
     str x3, [x2]
+
+    // lIndex++
     ldr x0, [sp, LINDEX]
     add x0, x0, 1
     str x0, [sp, LINDEX]
+    
+    // goto loop1
     b loop1
 
 endloop1:

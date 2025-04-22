@@ -195,7 +195,7 @@ endloop1:
     cmp x0, x6
     bne endif6
 
-    // return FALSE
+    // epilog and return FALSE
     mov w0, FALSE
     ldr     x30, [sp]
     add     sp, sp, ADD_STACK_BYTECOUNT 
@@ -222,7 +222,7 @@ endif5:
     ldr x1, [sp, LSUMLENGTH]
     str x1, [x0]
 
-    // return TRUE
+    // epilog and return TRUE
     mov w0, TRUE
     ldr     x30, [sp]
     add     sp, sp, ADD_STACK_BYTECOUNT  

@@ -135,7 +135,7 @@ endif4:
     add x1, x1, 8
     ldr x0, [sp, LINDEX]
     lsl x0, x0, 3
-    ldr x2, [x1, x0]
+    add x2, x1, x0
     ldr x3, [sp, ULSUM]
     str x3, [x2]
     ldr x0, [sp, LINDEX]
@@ -145,14 +145,12 @@ endif4:
 
 endloop1:
     // if(ulCarry != 1) goto endif5
-    adr x0, ULCARRY
-    ldr x0, [x0]
+    ldr x0, [sp, ULCARRY]
     cmp x0, 1
     bne endif5
 
     // if(lSumLength != MAX_DIGITS) goto endif6
-    adr x0, LSUMLENGTH
-    ldr x0, [x0]
+    ldr x0, [sp, LSUMLENGTH]
     mov x6, MAX_DIGITS
     cmp x0, x6
     bne endif6

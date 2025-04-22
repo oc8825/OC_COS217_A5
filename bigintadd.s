@@ -188,8 +188,7 @@ endif5:
     // return TRUE
     mov w0, TRUE
     ldr     x30, [sp]
-    add     sp, sp, ADD_STACK_BYTECOUNT
-    
+    add     sp, sp, ADD_STACK_BYTECOUNT  
     ret
 
     

@@ -5,10 +5,7 @@
 
 .equ FALSE, 0
 .equ TRUE, 1
-.equ OADDEND1, 48
-.equ ULCARRY, 24
-.equ LLENGTH, 0
-.equ LDIGITS, 8
+
 .equ SIZELONG, 8
 .equ MAX_DIGITS, 32768
 
@@ -83,6 +80,9 @@ LSUMLENGTH .req x22
 OADDEND1 .req x23
 OADDEND2 .req x24
 OSUM .req x25
+
+.equ LLENGTH, 0
+.equ LDIGITS, 8
 
 BigInt_add: 
     // Prolog

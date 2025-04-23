@@ -30,38 +30,41 @@
 
 .equ LARGER_STACK_BYTECOUNT, 32
 
-.equ LLARGER, 8
-
-.equ LLENGTH1, 16
-.equ LLENGTH2, 24
+LLARGER .req 19
+LLENGTH1 .req 20
+LLENGTH2 .req 21
 
 BigInt_larger: 
     // Prolog
     sub sp, sp, LARGER_STACK_BYTECOUNT
     str x30, [sp]
-    str x0, [sp, LLENGTH1]
-    str x1, [sp, LLENGTH2]
+    str x19, [sp, 8]
+    str x20, [sp, 16]
+    str x21, [sp, 24]
+    mov LLENGTH1, x0
+    mov LLENGTH2, x1
 
     // if (lLength1 <= lLength2) goto else1
-    ldr x0, [sp, LLENGTH1]
-    ldr x1, [sp, LLENGTH2]
-    cmp x0, x1
+    cmp LLENGTH1, LLENGTH2
     ble else1
 
     // lLarger = lLength1
-    str x0, [sp, LLARGER]
+    str LLENGTH1, LLARGER
 
     // goto endif1
     b endif1
 
 else1: 
     // lLarger = lLength2
-    str x1, [sp, LLARGER]
+    str LLENGTH2, LLARGER
 
 endif1:
     // epilog and return lLarger
-    ldr x0, [sp, LLARGER]
+    mov x0, LLARGER
     ldr x30, [sp]
+    ldr x19, [sp, 8]
+    ldr x20, [sp, 16]
+    ldr x21, [sp, 24]
     add sp, sp, LARGER_STACK_BYTECOUNT
     ret
 

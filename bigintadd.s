@@ -5,10 +5,7 @@
 
 .equ FALSE, 0
 .equ TRUE, 1
-// .equ OADDEND1, 48
-// .equ ULCARRY, 24
-.equ LLENGTH, 0
-.equ LDIGITS, 8
+
 .equ SIZELONG, 8
 .equ MAX_DIGITS, 32768
 
@@ -80,6 +77,9 @@ endif1:
 .equ OADDEND1, 40
 .equ OADDEND2, 48
 .equ OSUM, 56
+
+.equ LLENGTH, 0
+.equ LDIGITS, 8
 
 
 BigInt_add: 

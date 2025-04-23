@@ -30,11 +30,11 @@
 
 .equ LARGER_STACK_BYTECOUNT, 32
 
-LLARGER .req 19
-LLENGTH1 .req 20
-LLENGTH2 .req 21
+LLARGER .req x19
+LLENGTH1 .req x20
+LLENGTH2 .req x21
 
-BigInt_larger: 
+BigInt_larger:
     // Prolog
     sub sp, sp, LARGER_STACK_BYTECOUNT
     str x30, [sp]

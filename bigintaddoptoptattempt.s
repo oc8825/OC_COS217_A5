@@ -95,28 +95,23 @@ endif2:
     cmp LINDEX, LSUMLENGTH
     bge endloop1
 
-loop1: 
-    // if a carry did not occur, branch to nocarry1
-    bcc carry1
-
-    // Start ULSUM with 1 in it already, as carry occured
-    mov ULSUM, 1
-
-nocarry1:
     // Clear carry
     adds xzr, xzr, xzr
 
-    // ulSum += oAddend1->aulDigits[lIndex]
+loop1: 
+    // store oAddend1->aulDigits[lIndex] at x2
     add x1, OADDEND1, LDIGITS
     lsl x0, LINDEX, 3
     ldr x2, [x1, x0]
-    adcs ULSUM, ULSUM, x2
 
-    // ulSum += oAddend2->aulDigits[lIndex]
+    // store oAddend2->aulDigits[lIndex] at x3
     add x1, OADDEND2, LDIGITS
     lsl x0, LINDEX, 3
-    ldr x2, [x1, x0]
-    adcs ULSUM, ULSUM, x2
+    ldr x3, [x1, x0]
+
+    // add oAddend1->aulDigits[lIndex] and oAddend2->aulDigits[lIndex]
+    // to ulSum, along with carry
+    adcs ULSUM, x2, x3
 
     // oSum->aulDigits[lIndex] = ulSum
     add x1, OSUM, LDIGITS

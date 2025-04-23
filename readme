@@ -134,6 +134,26 @@ count when spacing is used irregularly
 mywc20.txt: This contains words with punctuation within them, testing
 the program's ability to keep track of words (series of non
 whitespace characters) when there are punctuation marks within them
+Stress Tests: 
+mywc13.txt: This contains a file with 1000 lines of words with a character
+count of 47238 characters. It a stress test to see if the program can handle
+large amounts of text, and was derived from a wikipedia text scraper
+we developed in Python. 
+mywc14.txt: This contains a file with 1000 lines of words with a character
+count of 47488 characters. It a stress test to see if the program can handle
+large amounts of text, and was derived from a wikipedia text scraper
+we developed in Python. 
+mywc15.txt: This contains a file with 1000 lines of words with a character 
+count of 47428. It a stress test to see if the program can handle
+large amounts of text, and was derived from a wikipedia text scraper
+we developed in Python. 
+Statement Tests: 
+mywc16.txt: This is a statement test meant to test the following lines in 
+the mywc.c file: 30, 32, 34, 36, 38, 39, 42, 44, 45, 48, 49, 52, 53, 55, 56
+mywc.17.txt: This is a statement test meant to test the following lines in 
+mywc.c: 30, 32, 34, 36, 48, 49, 52, 55, 56
+mywc18.txt: This is a statement test meant to test the following lines in 
+the mywc.c file: 30, 32, 34, 42, 44, 45, 52, 53, 55, 56
 
 ------------------------------------------------------------------------
 What are the CPU times consumed by the programs from Parts 2a, 2b, 2d,

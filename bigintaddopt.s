@@ -100,8 +100,10 @@ BigInt_add:
     mov OSUM, x2
     
     // lSumLength = BigInt_larger(oAddend1->lLength, oAddend2->lLength)
-    ldr x0, [OADDEND1, LLENGTH]
-    ldr x1, [OADDEND2, LLENGTH]
+    add x0, OADDEND1, LLENGTH
+    ldr x0, [x0]
+    add x1, OADDEND2, LLENGTH
+    ldr x1, [x1]
     bl BigInt_larger
     mov LSUMLENGTH, x0
 
@@ -111,7 +113,8 @@ BigInt_add:
     ble endif2
 
     // memset(oSum->aulDigits, 0, MAX_DIGITS * sizeof(unsigned long))
-    ldr x0, [OSUM, LDIGITS]
+    add x0, OSUM, LDIGITS
+    ldr x0, [x0]
     mov x1, 0
     mov x4, SIZELONG
     mov x6, MAX_DIGITS
@@ -137,7 +140,7 @@ loop1:
     mov ULCARRY, 0
 
     // ulSum += oAddend1->aulDigits[lIndex]
-    ldr x1, [OADDEND1, LDIGITS]
+    add x1, OADDEND1, LDIGITS
     lsl x0, LINDEX, 3
     ldr x2, [x1, x0]
     add ULSUM, ULSUM, x2
@@ -151,7 +154,7 @@ loop1:
 
 endif3:
     // ulSum += oAddend2->aulDigits[lIndex]
-    ldr x1, [OADDEND2, LDIGITS]
+    add x1, OADDEND2, LDIGITS
     lsl x0, LINDEX, 3
     ldr x2, [x1, x0]
     add ULSUM, ULSUM, x2
@@ -165,7 +168,7 @@ endif3:
 
 endif4:
     // oSum->aulDigits[lIndex] = ulSum
-    ldr x1, [OSUM, LDIGITS]
+    add x1, OSUM, LDIGITS
     lsl x0, LINDEX, 3
     str ULSUM, [x1, x0]
 
@@ -200,7 +203,7 @@ endloop1:
 
 endif6:
     // oSum->aulDigits[lSumLength] = 1
-    ldr x1, [OSUM, LDIGITS]
+    add x1, OSUM, LDIGITS
     lsl x0, LSUMLENGTH, 3
     ldr x2, [x1, x0]
     mov x3, 1

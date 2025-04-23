@@ -97,7 +97,7 @@ BigInt_add:
     str x25, [sp, 56]
     mov OADDEND1, x0
     mov OADDEND2, x1
-    mov OADDEND3, x2
+    mov OSUM, x2
     
     // lSumLength = BigInt_larger(oAddend1->lLength, oAddend2->lLength)
     ldr x0, [OADDEND1, LLENGTH]
@@ -167,8 +167,7 @@ endif4:
     // oSum->aulDigits[lIndex] = ulSum
     ldr x1, [OSUM, LDIGITS]
     lsl x0, LINDEX, 3
-    ldr x2, [x1, x0]
-    str ULSUM, [x2]
+    str ULSUM, [x1, x0]
 
     // lIndex++
     add LINDEX, LINDEX, 1

@@ -29,7 +29,6 @@
 
 .equ ADD_STACK_BYTECOUNT, 64
 
-ULCARRY .req x19
 ULSUM .req x20
 LINDEX .req x21
 LSUMLENGTH .req x22
@@ -45,7 +44,6 @@ BigInt_add:
     // Prolog
     sub sp, sp, ADD_STACK_BYTECOUNT
     str x30, [sp]
-    str x19, [sp, 8]
     str x20, [sp, 16]
     str x21, [sp, 24]
     str x22, [sp, 32]
@@ -93,48 +91,33 @@ endif2:
     // lIndex = 0
     mov LINDEX, 0
 
-    // ulCarry = 0
-    mov ULCARRY, 0
-
     // if (lIndex >= lSumLength) goto endloop1
     cmp LINDEX, LSUMLENGTH
     bge endloop1
 
 loop1: 
-    // ulSum = ulCarry
-    mov ULSUM, ULCARRY
+    // if a carry did not occur, branch to nocarry1
+    bcc carry1
 
-    // ulCarry = 0
-    mov ULCARRY, 0
+    // Start ULSUM with 1 in it already, as carry occured
+    mov ULSUM, 1
+
+nocarry1:
+    // Clear carry
+    adds xzr, xzr, xzr
 
     // ulSum += oAddend1->aulDigits[lIndex]
     add x1, OADDEND1, LDIGITS
     lsl x0, LINDEX, 3
     ldr x2, [x1, x0]
-    add ULSUM, ULSUM, x2
+    adcs ULSUM, ULSUM, x2
 
-    // if (ulSum >= oAddend1->aulDigits[lIndex]) goto endif3
-    cmp ULSUM, x2
-    bge endif3
-
-    // ulCarry = 1
-    mov ULCARRY, 1
-
-endif3:
     // ulSum += oAddend2->aulDigits[lIndex]
     add x1, OADDEND2, LDIGITS
     lsl x0, LINDEX, 3
     ldr x2, [x1, x0]
-    add ULSUM, ULSUM, x2
+    adcs ULSUM, ULSUM, x2
 
-    // if (ulSum >= oAddend2->aulDigits[lIndex]) goto endif4
-    cmp ULSUM, x2
-    bge endif4
-
-    // ulCarry = 1
-    mov ULCARRY, 1
-
-endif4:
     // oSum->aulDigits[lIndex] = ulSum
     add x1, OSUM, LDIGITS
     lsl x0, LINDEX, 3
@@ -148,9 +131,8 @@ endif4:
     blt loop1
 
 endloop1:
-    // if(ulCarry != 1) goto endif5
-    cmp ULCARRY, 1
-    bne endif5
+    // branch if didn't carry
+    bcc endif5
 
     // if(lSumLength != MAX_DIGITS) goto endif6
     mov x6, MAX_DIGITS
@@ -160,7 +142,6 @@ endloop1:
     // epilog and return FALSE
     mov w0, FALSE
     ldr     x30, [sp]
-    ldr x19, [sp, 8]
     ldr x20, [sp, 16]
     ldr x21, [sp, 24]
     ldr x22, [sp, 32]
@@ -187,7 +168,6 @@ endif5:
     // epilog and return TRUE
     mov w0, TRUE
     ldr     x30, [sp]
-    ldr x19, [sp, 8]
     ldr x20, [sp, 16]
     ldr x21, [sp, 24]
     ldr x22, [sp, 32]

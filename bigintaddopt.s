@@ -49,14 +49,14 @@ BigInt_larger:
     ble else1
 
     // lLarger = lLength1
-    mov LLENGTH1, LLARGER
+    mov LLARGER, LLENGTH1
 
     // goto endif1
     b endif1
 
 else1: 
     // lLarger = lLength2
-    mov LLENGTH2, LLARGER
+    mov LLARGER, LLENGTH2
 
 endif1:
     // epilog and return lLarger

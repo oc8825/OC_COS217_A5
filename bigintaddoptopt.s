@@ -28,49 +28,6 @@
     
     .section .text
 
-.equ LARGER_STACK_BYTECOUNT, 32
-
-LLARGER .req x19
-LLENGTH1 .req x20
-LLENGTH2 .req x21
-
-BigInt_larger:
-    // Prolog
-    sub sp, sp, LARGER_STACK_BYTECOUNT
-    str x30, [sp]
-    str x19, [sp, 8]
-    str x20, [sp, 16]
-    str x21, [sp, 24]
-    mov LLENGTH1, x0
-    mov LLENGTH2, x1
-
-    // if (lLength1 <= lLength2) goto else1
-    cmp LLENGTH1, LLENGTH2
-    ble else1
-
-    // lLarger = lLength1
-    mov LLARGER, LLENGTH1
-
-    // goto endif1
-    b endif1
-
-else1: 
-    // lLarger = lLength2
-    mov LLARGER, LLENGTH2
-
-endif1:
-    // epilog and return lLarger
-    mov x0, LLARGER
-    ldr x30, [sp]
-    ldr x19, [sp, 8]
-    ldr x20, [sp, 16]
-    ldr x21, [sp, 24]
-    add sp, sp, LARGER_STACK_BYTECOUNT
-    ret
-
-.size   BigInt_larger, .-BigInt_larger
-
-
 .global BigInt_add
 
 .equ ADD_STACK_BYTECOUNT, 64
@@ -104,9 +61,15 @@ BigInt_add:
     ldr x0, [x0]
     add x1, OADDEND2, LLENGTH
     ldr x1, [x1]
-    bl BigInt_larger
+    cmp x0, x1
+    ble else1
     mov LSUMLENGTH, x0
+    b endif1
 
+else1:
+    mov LSUMLENGTH, x1
+
+endif1:
     // if (oSum->lLength <= lSumLength) goto endif2
     ldr x0, [OSUM, LLENGTH]
     cmp x0, LSUMLENGTH

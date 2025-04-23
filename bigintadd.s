@@ -5,8 +5,8 @@
 
 .equ FALSE, 0
 .equ TRUE, 1
-.equ OADDEND1, 48
-.equ ULCARRY, 24
+// .equ OADDEND1, 48
+// .equ ULCARRY, 24
 .equ LLENGTH, 0
 .equ LDIGITS, 8
 .equ SIZELONG, 8

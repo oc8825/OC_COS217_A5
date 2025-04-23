@@ -56,17 +56,23 @@ BigInt_add:
     mov OADDEND2, x1
     mov OSUM, x2
     
-    // lSumLength = BigInt_larger(oAddend1->lLength, oAddend2->lLength)
+    // Inline larger function
+    // get oAddend1's length in x0
     add x0, OADDEND1, LLENGTH
     ldr x0, [x0]
+    // get oAddend2's length in x1
     add x1, OADDEND2, LLENGTH
     ldr x1, [x1]
+    // branch to else1 if oAddend1's length is less than or equal
+    // to oAddend2's length
     cmp x0, x1
     ble else1
+    // set lSumLength to oAddend1's length
     mov LSUMLENGTH, x0
     b endif1
 
 else1:
+    // set lSumLength to oAddend2's length
     mov LSUMLENGTH, x1
 
 endif1:

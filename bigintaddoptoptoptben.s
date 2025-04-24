@@ -1,110 +1,105 @@
-/* bigintadd_a64.s — AArch64 assembly for BigInt_add()
- * Mirrors the given professor’s C implementation exactly,
- * using the same labels / flow as your original ASM.
- */
-
         .text
         .p2align 2
         .global BigInt_add
+
+/* --------------------------------------------------------------------
+ *  BigInt_add (oAddend1=x0, oAddend2=x1, oSum=x2)
+ *  returns w0 = TRUE(1) on success, FALSE(0) on overflow
+ *  Callee-saved: x19–x23, x30
+ * ------------------------------------------------------------------ */
+
+        .equ    MAX_DIGITS, 32768
+        .equ    LLENGTH,    0      //    long lLength at offset 0
+        .equ    LDIGITS,    8      // uint64_t aulDigits[] at offset 8
+        .equ    STACKSZ,    64
+
 BigInt_add:
-        // Prologue: save callee-saved regs and lr
-        sub     sp, sp, #64
-        stp     x30, x19, [sp, #0]
+        // ---- prologue ----
+        sub     sp, sp, #STACKSZ
+        stp     x30, x19, [sp]         // save lr + x19
         stp     x20, x21, [sp, #16]
         stp     x22, x23, [sp, #32]
 
-        // x0=oAddend1, x1=oAddend2, x2=oSum
-        mov     x19, x0         // save oAddend1
-        mov     x20, x1         // save oAddend2
-        mov     x21, x2         // save oSum
+        mov     x19, x0                // oAddend1
+        mov     x20, x1                // oAddend2
+        mov     x21, x2                // oSum
 
-        // Constants / struct offsets
-        .equ    MAX_DIGITS, 32768
-        .equ    LLENGTH,    0       // offset of lLength in BigInt
-        .equ    LDIGITS,    8       // offset of aulDigits[] in BigInt
+        // ---- compute lSumLength = max(o1->lLength, o2->lLength) ----
+        ldr     x4, [x19, #LLENGTH]
+        ldr     x5, [x20, #LLENGTH]
+        cmp     x4, x5
+        csel    x22, x4, x5, ge        // x22 ← lSumLength
 
-        // 1) Determine lSumLength = max(oAddend1->lLength, oAddend2->lLength)
-        ldr     x4,  [x19, #LLENGTH]
-        ldr     x5,  [x20, #LLENGTH]
-        cmp     x4,  x5
-        csel    x22, x4, x5, ge     // x22 ← lSumLength
-
-        // 2) Clear oSum’s digits if needed
-        ldr     x6,  [x21, #LLENGTH]
-        cmp     x6,  x22
-        ble     .Lmemset_done
-        // memset(oSum->aulDigits, 0, MAX_DIGITS * 8);
-        mov     x0,  x21
-        add     x0,  x0,  #LDIGITS
-        mov     w1,  #0
-        // bytes = MAX_DIGITS*8 = 32768*8 = 262144 = 0x4_0000
-        movz    x2,  #0x4, lsl #16
+        // ---- if (oSum->lLength > lSumLength) zero its digits ----
+        ldr     x6, [x21, #LLENGTH]
+        cmp     x6, x22
+        ble     .Lskip_memset
+        mov     x0, x21
+        add     x0, x0, #LDIGITS
+        mov     w1, #0
+        // byte-count = MAX_DIGITS*8 = 32768*8 = 262144 = 0x4_0000
+        mov     x2, #0x4, lsl #16
         bl      memset
-.Lmemset_done:
+.Lskip_memset:
 
-        // 3) Main add loop: ulCarry=0, for lIndex=0..lSumLength-1
-        mov     x10, #0         // x10 ⇐ ulCarry
-        mov     x23, #0         // x23 ⇐ lIndex
+        // ---- main add loop ----
+        mov     x23, #0                // ulCarry = 0
+        mov     x24, #0                // lIndex  = 0
 
 .Lloop1:
-        cmp     x23, x22        // if lIndex >= lSumLength, break
+        cmp     x24, x22
         b.ge    .Lendloop1
 
-        // load oAddend1->aulDigits[lIndex] → x2
-        add     x1,  x19, #LDIGITS
-        lsl     x0,  x23, #3
+        // load limb from oAddend1
+        add     x1, x19, #LDIGITS
+        lsl     x0, x24, #3
         ldr     x2, [x1, x0]
 
-        // load oAddend2->aulDigits[lIndex] → x3
-        add     x1,  x20, #LDIGITS
+        // load limb from oAddend2
+        add     x1, x20, #LDIGITS
         ldr     x3, [x1, x0]
 
-        // sum: x4 = x2 + x3 + carry-in
-        adcs    x4,  x2, x3
-        cset    x10, cs          // x10 = new carry
+        // x25 = x2 + x3 + carry-in, set NZCV
+        adcs    x25, x2, x3
+        cset    x23, cs                // ulCarry = carry-out
 
-        // store x4 into oSum->aulDigits[lIndex]
-        add     x1,  x21, #LDIGITS
-        str     x4,  [x1, x0]
+        // store sum limb
+        add     x1, x21, #LDIGITS
+        str     x25, [x1, x0]
 
-        // lIndex++
-        add     x23, x23, #1
+        add     x24, x24, #1           // ++lIndex
         b       .Lloop1
 .Lendloop1:
 
-        // 4) Handle final carry-out
-        cbz     x10, .Lno_carry  // if (ulCarry==0) skip carry-handler
+        // ---- handle final carry ----
+        cbz     x23, .Lsuccess         // if no carry → success
 
-        // if (lSumLength == MAX_DIGITS) return FALSE
-        mov     w6, #MAX_DIGITS
-        cmp     x22, x6
-        b.ne    .Lstore_carry
+        // now carry==1 → only overflow if lSumLength > MAX_DIGITS
+        // compare x22 vs. 32768 in one instruction:
+        cmp     x22, #8, lsl #12       // 8<<12 == 32768
+        b.hi    .Loverflow             // hi = unsigned > (i.e. x22 > MAX_DIGITS)
 
-        // overflow case:
-        mov     w0, #0          // FALSE
+        // else (x22 ≤ MAX_DIGITS): store the extra “1” digit
+        add     x1, x21, #LDIGITS
+        lsl     x0, x22, #3
+        mov     x3, #1
+        str     x3, [x1, x0]
+        add     x22, x22, #1           // ++lSumLength
+        b       .Lsuccess
+
+.Loverflow:
+        mov     w0, #0                 // FALSE
         b       .Lepilog
 
-.Lstore_carry:
-        // oSum->aulDigits[lSumLength] = 1
-        add     x1,  x21, #LDIGITS
-        lsl     x0,  x22, #3
-        mov     x4,  #1
-        str     x4,  [x1, x0]
-
-        // bump lSumLength
-        add     x22, x22, #1
-
-.Lno_carry:
-        // 5) Write back oSum->lLength = lSumLength, return TRUE
+.Lsuccess:
+        // write back length and return TRUE
         str     x22, [x21, #LLENGTH]
-        mov     w0,  #1          // TRUE
+        mov     w0, #1
 
 .Lepilog:
-        // restore callee-saved regs and return
+        // ---- restore & return ----
         ldp     x22, x23, [sp, #32]
         ldp     x20, x21, [sp, #16]
-        ldp     x30, x19, [sp, #0]
-        add     sp, sp, #64
+        ldp     x30, x19, [sp]
+        add     sp, sp, #STACKSZ
         ret
-
-

@@ -120,10 +120,6 @@ loop1:
 
     // lIndex++
     add LINDEX, LINDEX, 1
-    
-    // if (lIndex < lSumLength) goto loop1
-    // cmp LINDEX, LSUMLENGTH
-    // blt loop1
 
     // x9 = LINDEX - LSUMLENGTH
     sub x9, LINDEX, LSUMLENGTH

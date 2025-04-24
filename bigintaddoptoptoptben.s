@@ -1,136 +1,139 @@
-    .equ FALSE,           0
-    .equ TRUE,            1
+//--------------------------------------------------------------------
+// bigintadd_fixed.s
+// Owen Clarke · Ben Zhou · (2025-04-23 patch by <you>)
+//--------------------------------------------------------------------
 
-    .equ SIZELONG,        8
-    .equ MAX_DIGITS,      32768
+        .equ FALSE,              0
+        .equ TRUE,               1
 
-    .equ ADD_STACK_BYTECOUNT, 72       // CHANGED: was 64, now 72 to save one more register
+        .equ SIZELONG,           8
+        .equ MAX_DIGITS,     32768
 
-    ULSUM      .req x20
-    LINDEX     .req x21
-    LSUMLENGTH .req x22
+//--------------------------------------------------------------------
+        .section .text
+        .global BigInt_add
+//--------------------------------------------------------------------
 
-    OADDEND1   .req x23
-    OADDEND2   .req x24
-    OSUM       .req x25
+/* Callee-saved scratch registers */
+ULSUM       .req x20            // running “digit” sum
+LINDEX      .req x21            // loop index
+LSUMLENGTH  .req x22            // max(aLen,bLen) → tentative sum length
 
-    CARRYFLAG  .req x26               // CHANGED: new register for saving carry-out
+OADDEND1    .req x23            // struct * a
+OADDEND2    .req x24            // struct * b
+OSUM        .req x25            // struct * sum
 
-    .equ LLENGTH,       0
-    .equ LDIGITS,       8
+        .equ LLENGTH,           0       // offset: unsigned long lLength
+        .equ LDIGITS,           8       // offset: unsigned long aulDigits[0]
 
-    .global BigInt_add
+// Reserve space for lr + x20–x25 (7 × 8 = 56) → keep 16-byte alignment.
+        .equ ADD_STACK_BYTECOUNT, 64
+
+//--------------------------------------------------------------------
 
 BigInt_add:
-    // Prolog
-    sub    sp, sp, ADD_STACK_BYTECOUNT
-    str    x30, [sp]
-    str    x20, [sp, 16]
-    str    x21, [sp, 24]
-    str    x22, [sp, 32]
-    str    x23, [sp, 40]
-    str    x24, [sp, 48]
-    str    x25, [sp, 56]
-    str    x26, [sp, 64]              // CHANGED: save CARRYFLAG
+        //── prolog ───────────────────────────────────────────────────
+        sub     sp, sp, ADD_STACK_BYTECOUNT
+        stp     x30, x20, [sp]           // save lr, x20
+        stp     x21, x22, [sp, 16]       // save x21–x22
+        stp     x23, x24, [sp, 32]       // save x23–x24
+        str     x25,       [sp, 48]      // save x25
 
-    mov    OADDEND1, x0
-    mov    OADDEND2, x1
-    mov    OSUM,      x2
+        mov     OADDEND1, x0
+        mov     OADDEND2, x1
+        mov     OSUM,     x2
 
-    // get oAddend1->lLength
-    add    x0, OADDEND1, LLENGTH
-    ldr    x0, [x0]
-    // get oAddend2->lLength
-    add    x1, OADDEND2, LLENGTH
-    ldr    x1, [x1]
-    // lSumLength = max(x0, x1)
-    cmp    x0, x1
-    csel   x0, x0, x1, gt
-    mov    LSUMLENGTH, x0
+        //── find individual operand lengths ─────────────────────────
+        ldr     x0, [OADDEND1, LLENGTH]  // aLen
+        ldr     x1, [OADDEND2, LLENGTH]  // bLen
 
-    // if (oSum->lLength > lSumLength) clear old digits
-    ldr    x0, [OSUM, LLENGTH]
-    cmp    x0, LSUMLENGTH
-    ble    no_memset
-    add    x0, OSUM, LDIGITS
-    mov    x1, 0
-    mov    x4, SIZELONG
-    mov    x6, MAX_DIGITS
-    mul    x2, x6, x4
-    bl     memset
-no_memset:
+        // LSUMLENGTH = max(aLen, bLen)
+        cmp     x0, x1
+        csel    LSUMLENGTH, x0, x1, hi   // x0>x1 ? x0 : x1
 
-    // initialize index & carry
-    mov    LINDEX, 0
-    adds   xzr, xzr, xzr           // clear C flag
+        //── clear stale digits in oSum, *iff* its previous length was longer
+        ldr     x3, [OSUM, LLENGTH]      // oldSumLen
+        cmp     x3, LSUMLENGTH
+        ble     1f                       // oldLen ≤ newLen ⇒ nothing to wipe
 
-    // Main loop
-loop1:
-    // load aulDigits1[lIndex]
-    add    x1, OADDEND1, LDIGITS
-    lsl    x0, LINDEX, 3
-    ldr    x2, [x1, x0]
-    // load aulDigits2[lIndex]
-    add    x1, OADDEND2, LDIGITS
-    lsl    x0, LINDEX, 3
-    ldr    x3, [x1, x0]
+        // memset(oSum->digits, 0, MAX_DIGITS*sizeof(unsigned long));
+        add     x0, OSUM, LDIGITS        // dst
+        mov     x1, 0                    // value
+        mov     x4, SIZELONG
+        mov     x6, MAX_DIGITS
+        mul     x2, x6, x4               // count
+        bl      memset
+1:
 
-    adcs   ULSUM, x2, x3           // add with carry → updates C flag
-    cset   CARRYFLAG, cs           // CHANGED: save carry-out into CARRYFLAG
+        //── main addition loop ──────────────────────────────────────
+        mov     LINDEX, 0
+        adds    xzr, xzr, xzr            // clear carry flag
 
-    // store sum word
-    add    x1, OSUM, LDIGITS
-    lsl    x0, LINDEX, 3
-    str    ULSUM, [x1, x0]
+loop:
+        cmp     LINDEX, LSUMLENGTH
+        bge     end_loop
 
-    // increment index & test
-    add    LINDEX, LINDEX, 1
-    sub    x9, LINDEX, LSUMLENGTH  // sets new flags, but we don't care now
-    tbnz   x9, 63, loop1
+        // ---- digit from addend 1 (x2) ----
+        ldr     x3, [OADDEND1, LLENGTH]  // aLen (reload each pass)
+        cmp     LINDEX, x3
+        bge     2f                       // past the end → use 0
+        add     x4, OADDEND1, LDIGITS
+        lsl     x5, LINDEX, 3
+        ldr     x2, [x4, x5]
+        b       3f
+2:      mov     x2, 0
+3:
+        // ---- digit from addend 2 (x3) ----
+        ldr     x6, [OADDEND2, LLENGTH]  // bLen
+        cmp     LINDEX, x6
+        bge     4f
+        add     x7, OADDEND2, LDIGITS
+        lsl     x8, LINDEX, 3
+        ldr     x3, [x7, x8]
+        b       5f
+4:      mov     x3, 0
+5:
+        // ulSum = digit1 + digit2 + carry
+        adcs    ULSUM, x2, x3
+        cset    x10, cs                  // remember carry-out
 
-// after loop, CARRYFLAG holds the final carry
-endloop1:
-    cbz    CARRYFLAG, endif5       // CHANGED: branch if no carry-out
+        // store result digit
+        add     x9, OSUM, LDIGITS
+        lsl     x11, LINDEX, 3
+        str     ULSUM, [x9, x11]
 
-    // we did carry-out
-    mov    x6, MAX_DIGITS
-    cmp    LSUMLENGTH, x6
-    bne    endif6
+        add     LINDEX, LINDEX, 1
+        b       loop
 
-    // overflow: lSumLength == MAX_DIGITS
-    mov    w0, FALSE
-    // Epilog
-    ldr    x30, [sp]
-    ldr    x20, [sp, 16]
-    ldr    x21, [sp, 24]
-    ldr    x22, [sp, 32]
-    ldr    x23, [sp, 40]
-    ldr    x24, [sp, 48]
-    ldr    x25, [sp, 56]
-    ldr    x26, [sp, 64]            // CHANGED: restore CARRYFLAG
-    add    sp, sp, ADD_STACK_BYTECOUNT
-    ret
+end_loop:
+        //── handle final carry ──────────────────────────────────────
+        cbz     x10, 6f                  // no carry → skip
 
-endif6:
-    // append the carry bit as a new digit
-    add    x1, OSUM, LDIGITS
-    lsl    x0, LSUMLENGTH, 3
-    mov    x3, 1
-    str    x3, [x1, x0]
-    add    LSUMLENGTH, LSUMLENGTH, 1
+        cmp     LSUMLENGTH, MAX_DIGITS
+        beq     fail_full                // overflow – not enough room
 
-endif5:
-    // store final length & return TRUE
-    str    LSUMLENGTH, [OSUM, LLENGTH]
-    mov    w0, TRUE
-    // Epilog
-    ldr    x30, [sp]
-    ldr    x20, [sp, 16]
-    ldr    x21, [sp, 24]
-    ldr    x22, [sp, 32]
-    ldr    x23, [sp, 40]
-    ldr    x24, [sp, 48]
-    ldr    x25, [sp, 56]
-    ldr    x26, [sp, 64]            // CHANGED: restore CARRYFLAG
-    add    sp, sp, ADD_STACK_BYTECOUNT
-    ret
+        // oSum->digits[LSUMLENGTH] = 1;
+        add     x0, OSUM, LDIGITS
+        lsl     x1, LSUMLENGTH, 3
+        mov     x2, 1
+        str     x2, [x0, x1]
+
+        add     LSUMLENGTH, LSUMLENGTH, 1
+6:
+        //── write back length and return TRUE ───────────────────────
+        str     LSUMLENGTH, [OSUM, LLENGTH]
+
+success:
+        mov     w0, TRUE
+        b       epilog
+
+fail_full:
+        mov     w0, FALSE
+
+epilog:
+        ldp     x30, x20, [sp]
+        ldp     x21, x22, [sp, 16]
+        ldp     x23, x24, [sp, 32]
+        ldr     x25,       [sp, 48]
+        add     sp, sp, ADD_STACK_BYTECOUNT
+        ret

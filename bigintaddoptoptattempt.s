@@ -113,6 +113,9 @@ loop1:
     // to ulSum, along with carry
     adcs ULSUM, x2, x3
 
+    // store if there was a carry in x10
+    cset x10, cs
+
     // oSum->aulDigits[lIndex] = ulSum
     add x1, OSUM, LDIGITS
     lsl x0, LINDEX, 3
@@ -129,15 +132,15 @@ loop1:
     tbnz x9, 63, loop1
 
 endloop1:
-    // branch if didn't carry
-    bcc endif5
+    // branch if didn't carry, info for this stored in x10
+    cbz x10, endif5
 
     // if(lSumLength != MAX_DIGITS) goto endif6
     mov x6, MAX_DIGITS
     cmp LSUMLENGTH, x6
     bne endif6
 
-    // epilog and return FALSE
+    // epilog and return
     mov w0, FALSE
     ldr     x30, [sp]
     ldr x20, [sp, 16]

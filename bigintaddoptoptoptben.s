@@ -3,7 +3,7 @@
         .global     BigInt_add
 
 /* Constants and struct offsets */
-        .equ    MAX_DIGITS, 32768        // from bigintprivate.h
+        .equ    MAX_DIGITS, 32768        // same #define
         .equ    LLENGTH,    0            // offset of lLength
         .equ    LDIGITS,    8            // offset of aulDigits[]
         .equ    STACKSZ,    64
@@ -33,7 +33,7 @@ BigInt_add:
         mov     x0,  x21
         add     x0,  x0,  #LDIGITS
         mov     w1,  #0
-        // byte count = MAX_DIGITS*8 = 32768*8 = 0x4_0000
+        // count = MAX_DIGITS*8 = 262144 = 0x4_0000
         movz    x2,  #0x4, lsl #16
         bl      memset
 skip_memset:
@@ -46,20 +46,19 @@ loop1:
         cmp     x24, x22
         b.ge    endloop1
 
-        // load oAddend1->aulDigits[lIndex] → x2
+        // load limb1
         add     x1, x19, #LDIGITS
         lsl     x0, x24, #3
         ldr     x2, [x1, x0]
-
-        // load oAddend2->aulDigits[lIndex] → x3
+        // load limb2
         add     x1, x20, #LDIGITS
         ldr     x3, [x1, x0]
 
-        // x25 = x2 + x3 + carry-in; flags updated
+        // add-with-carry
         adcs    x25, x2, x3
-        cset    x23, cs      // ulCarry = carry-out
+        cset    x23, cs      // ulCarry
 
-        // store sum limb
+        // store result limb
         add     x1, x21, #LDIGITS
         str     x25, [x1, x0]
 
@@ -67,38 +66,37 @@ loop1:
         b       loop1
 endloop1:
 
-        // 4) Handle final carry
-        cbz     x23, success    // if ulCarry==0 → success
+        // 4) Final carry
+        cbz     x23, success    // if no carry → success
 
-        // if lSumLength == MAX_DIGITS → overflow
-        movz    w6, #0x8000     // 32768 in w6
-        cmp     x22, x6, lsl #0 // explicit compare reg-reg
-        b.ne    store_carry
+        // only overflow if lSumLength > MAX_DIGITS
+        cmp     x22, #8, lsl #12  // 8<<12 == 32768
+        b.hi    overflow
 
-overflow:
-        mov     w0, #0         // FALSE
-        b       epilog
-
-store_carry:
-        // carry==1 && lSumLength < MAX_DIGITS
+        // else store the extra “1” limb at index == MAX_DIGITS
         add     x1, x21, #LDIGITS
         lsl     x0, x22, #3
         mov     x3, #1
         str     x3, [x1, x0]
-        add     x22, x22, #1   // ++lSumLength
+        add     x22, x22, #1     // ++lSumLength
         b       success
 
+overflow:
+        mov     w0, #0           // FALSE
+        b       epilog
+
 success:
-        // oSum->lLength = lSumLength; return TRUE
+        // write back length & return TRUE
         str     x22, [x21, #LLENGTH]
         mov     w0, #1
 
 epilog:
-        // — restore callee-saved regs + LR & return —
+        // — restore & return —
         ldp     x22, x23, [sp, #32]
         ldp     x20, x21, [sp, #16]
         ldp     x30, x19, [sp, #0]
         add     sp, sp, #STACKSZ
         ret
+
 
 

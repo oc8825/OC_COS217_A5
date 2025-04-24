@@ -29,6 +29,7 @@
 
 .equ ADD_STACK_BYTECOUNT, 64
 
+ULCARRY .req x19
 ULSUM .req x20
 LINDEX .req x21
 LSUMLENGTH .req x22
@@ -44,6 +45,7 @@ BigInt_add:
     // Prolog
     sub sp, sp, ADD_STACK_BYTECOUNT
     str x30, [sp]
+    str x19, [sp, 8]
     str x20, [sp, 16]
     str x21, [sp, 24]
     str x22, [sp, 32]
@@ -91,31 +93,48 @@ endif2:
     // lIndex = 0
     mov LINDEX, 0
 
+    // ulCarry = 0
+    mov ULCARRY, 0
+
     // if (lIndex >= lSumLength) goto endloop1
     cmp LINDEX, LSUMLENGTH
     bge endloop1
 
-    // Clear carry
-    adds xzr, xzr, xzr
-
 loop1: 
-    // store oAddend1->aulDigits[lIndex] at x2
+    // ulSum = ulCarry
+    mov ULSUM, ULCARRY
+
+    // ulCarry = 0
+    mov ULCARRY, 0
+
+    // ulSum += oAddend1->aulDigits[lIndex]
     add x1, OADDEND1, LDIGITS
     lsl x0, LINDEX, 3
     ldr x2, [x1, x0]
+    add ULSUM, ULSUM, x2
 
-    // store oAddend2->aulDigits[lIndex] at x3
+    // if (ulSum >= oAddend1->aulDigits[lIndex]) goto endif3
+    cmp ULSUM, x2
+    bge endif3
+
+    // ulCarry = 1
+    mov ULCARRY, 1
+
+endif3:
+    // ulSum += oAddend2->aulDigits[lIndex]
     add x1, OADDEND2, LDIGITS
     lsl x0, LINDEX, 3
-    ldr x3, [x1, x0]
+    ldr x2, [x1, x0]
+    add ULSUM, ULSUM, x2
 
-    // add oAddend1->aulDigits[lIndex] and oAddend2->aulDigits[lIndex]
-    // to ulSum, along with carry
-    adcs ULSUM, x2, x3
+    // if (ulSum >= oAddend2->aulDigits[lIndex]) goto endif4
+    cmp ULSUM, x2
+    bge endif4
 
-    // store if there was a carry in x10
-    cset x10, cs
+    // ulCarry = 1
+    mov ULCARRY, 1
 
+endif4:
     // oSum->aulDigits[lIndex] = ulSum
     add x1, OSUM, LDIGITS
     lsl x0, LINDEX, 3
@@ -123,40 +142,38 @@ loop1:
 
     // lIndex++
     add LINDEX, LINDEX, 1
-
-    // x9 = LINDEX - LSUMLENGTH
-    sub x9, LINDEX, LSUMLENGTH
-
-    // branch back to loop1 if negative (lIndex < lSumLength) by
-    // checking the sign bit
-    tbnz x9, 63, loop1
+    
+    // if (lIndex < lSumLength) goto loop1
+    cmp LINDEX, LSUMLENGTH
+    blt loop1
 
 endloop1:
-    // branch if didn't carry, info for this stored in x10
-    cbz x10, endif5
+    // if(ulCarry != 1) goto endif5
+    cmp ULCARRY, 1
+    bne endif5
 
     // if(lSumLength != MAX_DIGITS) goto endif6
     mov x6, MAX_DIGITS
     cmp LSUMLENGTH, x6
     bne endif6
 
-    // epilog and return
+    // epilog and return FALSE
     mov w0, FALSE
-    ldr x30, [sp]
+    ldr     x30, [sp]
+    ldr x19, [sp, 8]
     ldr x20, [sp, 16]
     ldr x21, [sp, 24]
     ldr x22, [sp, 32]
     ldr x23, [sp, 40]
     ldr x24, [sp, 48]
     ldr x25, [sp, 56]
-    add sp, sp, ADD_STACK_BYTECOUNT 
+    add     sp, sp, ADD_STACK_BYTECOUNT 
     ret
 
 endif6:
     // oSum->aulDigits[lSumLength] = 1
     add x1, OSUM, LDIGITS
     lsl x0, LSUMLENGTH, 3
-    str xzr, [x1, x0]
     mov x3, 1
     str x3, [x1, x0]
 
@@ -169,12 +186,13 @@ endif5:
 
     // epilog and return TRUE
     mov w0, TRUE
-    ldr x30, [sp]
+    ldr     x30, [sp]
+    ldr x19, [sp, 8]
     ldr x20, [sp, 16]
     ldr x21, [sp, 24]
     ldr x22, [sp, 32]
     ldr x23, [sp, 40]
     ldr x24, [sp, 48]
     ldr x25, [sp, 56]
-    add sp, sp, ADD_STACK_BYTECOUNT  
+    add     sp, sp, ADD_STACK_BYTECOUNT  
     ret

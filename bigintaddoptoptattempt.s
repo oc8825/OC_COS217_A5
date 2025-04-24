@@ -142,14 +142,14 @@ endloop1:
 
     // epilog and return
     mov w0, FALSE
-    ldr     x30, [sp]
+    ldr x30, [sp]
     ldr x20, [sp, 16]
     ldr x21, [sp, 24]
     ldr x22, [sp, 32]
     ldr x23, [sp, 40]
     ldr x24, [sp, 48]
     ldr x25, [sp, 56]
-    add     sp, sp, ADD_STACK_BYTECOUNT 
+    add sp, sp, ADD_STACK_BYTECOUNT 
     ret
 
 endif6:
@@ -169,12 +169,12 @@ endif5:
 
     // epilog and return TRUE
     mov w0, TRUE
-    ldr     x30, [sp]
+    ldr x30, [sp]
     ldr x20, [sp, 16]
     ldr x21, [sp, 24]
     ldr x22, [sp, 32]
     ldr x23, [sp, 40]
     ldr x24, [sp, 48]
     ldr x25, [sp, 56]
-    add     sp, sp, ADD_STACK_BYTECOUNT  
+    add sp, sp, ADD_STACK_BYTECOUNT  
     ret

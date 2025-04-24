@@ -153,6 +153,7 @@ endif6:
     // oSum->aulDigits[lSumLength] = 1
     add x1, OSUM, LDIGITS
     lsl x0, LSUMLENGTH, 3
+    str xzr, [x1, x0]
     mov x3, 1
     str x3, [x1, x0]
 

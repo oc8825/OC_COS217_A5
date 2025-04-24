@@ -1,16 +1,11 @@
-/* bigintadd_a64.s — AArch64 assembly for BigInt_add()
- * Mirrors your original flow/labels but allows sum-length == MAX_DIGITS
- * without overflow, and uses only MOVZ/CMP-immediate to avoid literal pools.
- */
-
         .text
         .p2align    2
         .global     BigInt_add
 
 /* Constants and struct offsets */
-        .equ    MAX_DIGITS, 32768        // 0x8000
-        .equ    LLENGTH,    0            // offset of lLength in BigInt
-        .equ    LDIGITS,    8            // offset of aulDigits[] in BigInt
+        .equ    MAX_DIGITS, 32768        // from bigintprivate.h
+        .equ    LLENGTH,    0            // offset of lLength
+        .equ    LDIGITS,    8            // offset of aulDigits[]
         .equ    STACKSZ,    64
 
 BigInt_add:
@@ -29,17 +24,16 @@ BigInt_add:
         ldr     x4, [x19, #LLENGTH]
         ldr     x5, [x20, #LLENGTH]
         cmp     x4, x5
-        csel    x22, x4, x5, ge      // x22 ← lSumLength
+        csel    x22, x4, x5, ge        // x22 ← lSumLength
 
         // 2) if (oSum->lLength > lSumLength) zero its digits
         ldr     x6, [x21, #LLENGTH]
         cmp     x6, x22
         ble     .Lskip_memset
-        // memset(oSum->aulDigits, 0, MAX_DIGITS*8)
         mov     x0, x21
         add     x0, x0, #LDIGITS
         mov     w1, #0
-        // byte count = 32768*8 = 262144 = 0x4_0000
+        // byte count = MAX_DIGITS*8 = 262144 = 0x4_0000
         movz    x2, #0x4, lsl #16
         bl      memset
 .Lskip_memset:
@@ -74,34 +68,36 @@ BigInt_add:
 .Lendloop1:
 
         // 4) Handle final carry
-        cbz     x23, .Lsuccess      // if no carry, go success
+        cbz     x23, .Lsuccess      // if (ulCarry==0) → success
 
-        // if (lSumLength > MAX_DIGITS) overflow
-        // compare x22 vs. 32768 using CMP-immediate & shift
-        cmp     x22, #8, lsl #12    // 8<<12 = 32768
-        b.hi    .Loverflow          // hi = unsigned greater
-
-        // else (lSumLength ≤ MAX_DIGITS): store the extra “1” limb
-        add     x1, x21, #LDIGITS
-        lsl     x0, x22, #3
-        mov     x3, #1
-        str     x3, [x1, x0]
-        add     x22, x22, #1        // ++lSumLength
-        b       .Lsuccess
+        // if (lSumLength == MAX_DIGITS) → overflow
+        mov     w6, #MAX_DIGITS
+        cmp     x22, w6
+        b.ne    .Lstore_carry
 
 .Loverflow:
         mov     w0, #0              // FALSE
         b       .Lepilog
 
+.Lstore_carry:
+        // here: carry==1 && lSumLength < MAX_DIGITS
+        // safe to write at aulDigits[lSumLength]
+        add     x1, x21, #LDIGITS
+        lsl     x0, x22, #3
+        mov     x3, #1
+        str     x3, [x1, x0]
+        add     x22, x22, #1       // ++lSumLength
+
 .Lsuccess:
         // write back oSum->lLength = lSumLength
         str     x22, [x21, #LLENGTH]
-        mov     w0, #1              // TRUE
+        mov     w0, #1             // TRUE
 
 .Lepilog:
-        // restore callee-saved + lr, then return
+        // — restore callee-saved + lr & return —
         ldp     x22, x23, [sp, #32]
         ldp     x20, x21, [sp, #16]
         ldp     x30, x19, [sp, #0]
         add     sp, sp, #STACKSZ
         ret
+

@@ -9,16 +9,16 @@
         .equ    STACKSZ,    64
 
 BigInt_add:
-        // — Prologue: save callee-saved + lr  —
+        // — Prologue: save callee-saved regs + lr —
         sub     sp, sp, #STACKSZ
         stp     x30, x19, [sp, #0]
         stp     x20, x21, [sp, #16]
         stp     x22, x23, [sp, #32]
 
-        // x0=oAddend1, x1=oAddend2, x2=oSum
-        mov     x19, x0       // oAddend1
-        mov     x20, x1       // oAddend2
-        mov     x21, x2       // oSum
+        // x0 = oAddend1, x1 = oAddend2, x2 = oSum
+        mov     x19, x0       // save oAddend1
+        mov     x20, x1       // save oAddend2
+        mov     x21, x2       // save oSum
 
         // 1) lSumLength = max(o1->lLength, o2->lLength)
         ldr     x4, [x19, #LLENGTH]
@@ -33,7 +33,7 @@ BigInt_add:
         mov     x0, x21
         add     x0, x0, #LDIGITS
         mov     w1, #0
-        // byte count = MAX_DIGITS*8 = 262144 = 0x4_0000
+        // byte count = MAX_DIGITS*8 = 32768*8 = 262144 = 0x4_0000
         movz    x2, #0x4, lsl #16
         bl      memset
 .Lskip_memset:
@@ -55,7 +55,7 @@ BigInt_add:
         add     x1, x20, #LDIGITS
         ldr     x3, [x1, x0]
 
-        // x25 = x2 + x3 + carry-in, flags updated
+        // x25 = x2 + x3 + carry-in, set flags
         adcs    x25, x2, x3
         cset    x23, cs      // ulCarry = carry-out
 
@@ -71,8 +71,8 @@ BigInt_add:
         cbz     x23, .Lsuccess      // if (ulCarry==0) → success
 
         // if (lSumLength == MAX_DIGITS) → overflow
-        mov     w6, #MAX_DIGITS
-        cmp     x22, w6
+        mov     x6, #MAX_DIGITS
+        cmp     x22, x6
         b.ne    .Lstore_carry
 
 .Loverflow:
@@ -94,7 +94,7 @@ BigInt_add:
         mov     w0, #1             // TRUE
 
 .Lepilog:
-        // — restore callee-saved + lr & return —
+        // — restore callee-saved regs + lr & return —
         ldp     x22, x23, [sp, #32]
         ldp     x20, x21, [sp, #16]
         ldp     x30, x19, [sp, #0]

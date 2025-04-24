@@ -122,8 +122,15 @@ loop1:
     add LINDEX, LINDEX, 1
     
     // if (lIndex < lSumLength) goto loop1
-    cmp LINDEX, LSUMLENGTH
-    blt loop1
+    // cmp LINDEX, LSUMLENGTH
+    // blt loop1
+
+    // x9 = LINDEX - LSUMLENGTH
+    sub x9, LINDEX, LSUMLENGTH
+
+    // branch back to loop1 if negative (lIndex < lSumLength) by
+    // checking the sign bit
+    tbnz x9, 63, loop1
 
 endloop1:
     // branch if didn't carry

@@ -114,8 +114,8 @@ experience working in lower level languages.
 Student 2: What is your assessment of the assignment? Was it helpful?
 Was it fun?
 
-It was helpful in learning assembly and the compiler, but annoying at times 
-for sure
+It was helpful in learning assembly and the compiler, but annoying at 
+times for sure
 
 
 
@@ -124,9 +124,12 @@ for sure
 will help your grader to grade it in the most favorable light? In
 particular, what bugs are in your submission?
 
-
-
-
+Our part f gives the correct answer and runs quickly, but fails
+boundary tests 9a, 9b, and 10. We had part f fully working without the
+adcs optimization, but only failed these tests once adding the adcs
+optimization. We kept the adcs optimization in because it is much
+faster, but if we get more points for a fully correct but not as fast
+part f, we would appreciate those points please. Thank you so much!
 
 ------------------------------------------------------------------------
 What is your mywc program test plan?
@@ -202,4 +205,4 @@ Part 2d:  4.273398 seconds
 
 Part 2e:  2.531473 seconds
 
-Part 2f:  _____ seconds
+Part 2f:  0.704407 seconds

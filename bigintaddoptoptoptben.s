@@ -136,8 +136,8 @@ endloop1:
     cbz x10, endif5
 
     // if(lSumLength != MAX_DIGITS) goto endif6
-    mov w6, MAX_DIGITS
-    cmp LSUMLENGTH, w6
+    mov x6, #MAX_DIGITS
+    cmp LSUMLENGTH, x6
     b.ne endif6
 
     // epilog and return

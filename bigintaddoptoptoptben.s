@@ -1,180 +1,111 @@
-//--------------------------------------------------------------------
-// bigintaddoptopt.s
-// Owen Clarke and Ben Zhou
-//--------------------------------------------------------------------
+/* --------------------------------------------------------------------
+ *  BigInt_add (oAddend1=x0, oAddend2=x1, oSum=x2)
+ *  Callee-saved: x19-x25, x30
+ *  Scratch:      x3-x18
+ * ------------------------------------------------------------------ */
 
-.equ FALSE, 0
-.equ TRUE, 1
+        .equ    FALSE,      0
+        .equ    TRUE,       1
+        .equ    MAX_DIGITS, 32768           // 0x8000
 
-.equ SIZELONG, 8
-.equ MAX_DIGITS, 32768
+        /* structure offsets (uint64_t aulDigits[], long lLength) */
+        .equ    LDIGITS,    0
+        .equ    LLENGTH,    8
 
-//--------------------------------------------------------------------
+        .equ    ADD_STACK_BYTECOUNT,  64    // space for callee-saved regs
 
-    .section .rodata
+        .text
+        .p2align 2
+        .global  BigInt_add
+BigInt_add:
+        /* -------------------------------- prologue ---------------- */
+        sub     sp,  sp,  ADD_STACK_BYTECOUNT
+        stp     x20, x21, [sp, 16]
+        stp     x22, x23, [sp, 32]
+        stp     x24, x25, [sp, 48]
+        stp     x30, x19, [sp]               // save lr + a spare
 
-//--------------------------------------------------------------------
+        mov     x19, x0          // OADDEND1
+        mov     x20, x1          // OADDEND2
+        mov     x21, x2          // OSUM
 
-    .section .data
+        /* ---- lSumLength = max(a1->lLength, a2->lLength) ---------- */
+        ldr     x4,  [x19, LLENGTH]
+        ldr     x5,  [x20, LLENGTH]
+        cmp     x4,  x5
+        csel    x22, x4, x5, ge          // x22 = lSumLength  (LSUMLENGTH)
 
-//--------------------------------------------------------------------
-    
-    .section .bss
+        /* if (oSum->lLength > lSumLength) zero the digits             */
+        ldr     x6,  [x21, LLENGTH]
+        cmp     x6,  x22
+        ble     memset_done
+        /* memset(oSum->aulDigits, 0, MAX_DIGITS*sizeof(uint64_t))     */
+        mov     x0,  x21                    // void *dst
+        add     x0,  x0,  LDIGITS
+        mov     w1,  #0                     // value
+        mov     x2,  #(MAX_DIGITS * 8)      // byte count
+        bl      memset
+memset_done:
 
-//--------------------------------------------------------------------
-    
-    .section .text
+        /* ---------------- main limb-wise add loop ------------------ */
+        mov     x23, #0                 // ulCarry  (x23)
+        mov     x24, #0                 // lIndex   (LINDEX)
 
-.global BigInt_add
+loop1:
+        cmp     x24, x22                // while (lIndex < lSumLength)
+        b.ge    endloop1
 
-.equ ADD_STACK_BYTECOUNT, 64
+        /* load oAddend1->aulDigits[lIndex]  -> x2 */
+        add     x1,  x19,  LDIGITS
+        lsl     x0,  x24,  #3
+        ldr     x2, [x1, x0]
 
-ULSUM .req x20
-LINDEX .req x21
-LSUMLENGTH .req x22
+        /* load oAddend2->aulDigits[lIndex]  -> x3 */
+        add     x1,  x20,  LDIGITS
+        ldr     x3, [x1, x0]
 
-OADDEND1 .req x23
-OADDEND2 .req x24
-OSUM .req x25
+        /* ulSum = x2 + x3 + carry-in */
+        adcs    x25, x2, x3             // x25 = ulSum
+        cset    x23, cs                 // x23 = ulCarry (1|0)
 
-.equ LLENGTH, 0
-.equ LDIGITS, 8
+        /* store ulSum to oSum->aulDigits[lIndex] */
+        add     x1,  x21,  LDIGITS
+        str     x25, [x1, x0]
 
-BigInt_add: 
-    // Prolog
-    sub sp, sp, ADD_STACK_BYTECOUNT
-    str x30, [sp]
-    str x20, [sp, 16]
-    str x21, [sp, 24]
-    str x22, [sp, 32]
-    str x23, [sp, 40]
-    str x24, [sp, 48]
-    str x25, [sp, 56]
-    mov OADDEND1, x0
-    mov OADDEND2, x1
-    mov OSUM, x2
-    
-    // Inline larger function
-    // get oAddend1's length in x0
-    add x0, OADDEND1, LLENGTH
-    ldr x0, [x0]
-    // get oAddend2's length in x1
-    add x1, OADDEND2, LLENGTH
-    ldr x1, [x1]
-    // branch to else1 if oAddend1's length is less than or equal
-    // to oAddend2's length
-    cmp x0, x1
-    ble else1
-    // set lSumLength to oAddend1's length
-    mov LSUMLENGTH, x0
-    b endif1
-
-else1:
-    // set lSumLength to oAddend2's length
-    mov LSUMLENGTH, x1
-
-endif1:
-    // if (oSum->lLength <= lSumLength) goto endif2
-    ldr x0, [OSUM, LLENGTH]
-    cmp x0, LSUMLENGTH
-    ble endif2
-
-    // memset(oSum->aulDigits, 0, MAX_DIGITS * sizeof(unsigned long))
-    add x0, OSUM, LDIGITS
-    mov x1, 0
-    mov x4, SIZELONG
-    mov x6, MAX_DIGITS
-    mul x2, x6, x4
-    bl memset
-
-endif2: 
-    // lIndex = 0
-    mov LINDEX, 0
-
-    // if (lIndex >= lSumLength) goto endloop1
-    cmp LINDEX, LSUMLENGTH
-    bge endloop1
-
-    // Clear carry
-    adds xzr, xzr, xzr
-
-loop1: 
-    // store oAddend1->aulDigits[lIndex] at x2
-    add x1, OADDEND1, LDIGITS
-    lsl x0, LINDEX, 3
-    ldr x2, [x1, x0]
-
-    // store oAddend2->aulDigits[lIndex] at x3
-    add x1, OADDEND2, LDIGITS
-    lsl x0, LINDEX, 3
-    ldr x3, [x1, x0]
-
-    // add oAddend1->aulDigits[lIndex] and oAddend2->aulDigits[lIndex]
-    // to ulSum, along with carry
-    adcs ULSUM, x2, x3
-
-    // store if there was a carry in x10
-    cset x10, cs
-
-    // oSum->aulDigits[lIndex] = ulSum
-    add x1, OSUM, LDIGITS
-    lsl x0, LINDEX, 3
-    str ULSUM, [x1, x0]
-
-    // lIndex++
-    add LINDEX, LINDEX, 1
-
-    // x9 = LINDEX - LSUMLENGTH
-    sub x9, LINDEX, LSUMLENGTH
-
-    // branch back to loop1 if negative (lIndex < lSumLength) by
-    // checking the sign bit
-    tbnz x9, 63, loop1
-
+        add     x24, x24, #1            // ++lIndex
+        b       loop1
 endloop1:
-    // branch if didn't carry, info for this stored in x10
-    cbz x10, endif5
 
-    // if(lSumLength != MAX_DIGITS) goto endif6
-    mov x6, #MAX_DIGITS
-    cmp LSUMLENGTH, x6
-    b.ne endif6
+        /* ---------------- carry-out handler ------------------------ */
+        cbz     x23, success            // if (!ulCarry) -> success
 
-    // epilog and return
-    mov w0, FALSE
-    ldr x30, [sp]
-    ldr x20, [sp, 16]
-    ldr x21, [sp, 24]
-    ldr x22, [sp, 32]
-    ldr x23, [sp, 40]
-    ldr x24, [sp, 48]
-    ldr x25, [sp, 56]
-    add sp, sp, ADD_STACK_BYTECOUNT 
-    ret
+        /* ulCarry == 1: if (lSumLength == MAX_DIGITS) overflow */
+        mov     w6, #MAX_DIGITS          // *** immediate load, no segfault **
+        cmp     x22, x6
+        b.ne    store_carry             // room for one more limb
 
-endif6:
-    // oSum->aulDigits[lSumLength] = 1
-    add x1, OSUM, LDIGITS
-    lsl x0, LSUMLENGTH, 3
-    str xzr, [x1, x0]
-    mov x3, 1
-    str x3, [x1, x0]
+overflow:
+        mov     w0,  #FALSE
+        b       epilog
 
-    // lSumLength++
-    add LSUMLENGTH, LSUMLENGTH, 1
+store_carry:
+        /* oSum->aulDigits[lSumLength] = 1 */
+        add     x1,  x21,  LDIGITS
+        lsl     x0,  x22, #3
+        mov     x3,  #1
+        str     x3,  [x1, x0]
 
-endif5:
-    // oSum->lLength = lSumLength
-    str LSUMLENGTH, [OSUM, LLENGTH]
+        add     x22, x22, #1            // ++lSumLength
 
-    // epilog and return TRUE
-    mov w0, TRUE
-    ldr x30, [sp]
-    ldr x20, [sp, 16]
-    ldr x21, [sp, 24]
-    ldr x22, [sp, 32]
-    ldr x23, [sp, 40]
-    ldr x24, [sp, 48]
-    ldr x25, [sp, 56]
-    add sp, sp, ADD_STACK_BYTECOUNT  
-    ret
+success:
+        /* oSum->lLength = lSumLength */
+        str     x22, [x21, LLENGTH]
+        mov     w0,  #TRUE
+
+epilog:
+        ldp     x30, x19, [sp]
+        ldp     x20, x21, [sp, 16]
+        ldp     x22, x23, [sp, 32]
+        ldp     x24, x25, [sp, 48]
+        add     sp, sp,  ADD_STACK_BYTECOUNT
+        ret
